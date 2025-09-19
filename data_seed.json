@@ -1,0 +1,37 @@
+[
+  {
+    "id": "phoenix-lights-1997",
+    "title": "Phoenix Lights (1997)",
+    "type": "UFO",
+    "summary": "Mass sighting of lights over Arizona; thousands of witnesses. Military exercises nearby created competing explanations.",
+    "dates": {
+      "start": "1997-03-13"
+    },
+    "locations": [
+      "Phoenix, AZ",
+      "Tucson, AZ"
+    ],
+    "entities": [
+      "Fife Symington",
+      "Luke AFB"
+    ],
+    "sources": [
+      {
+        "label": "Wikipedia"
+      },
+      {
+        "label": "Local news archives"
+      }
+    ],
+    "tags": [
+      "nocturnal lights",
+      "multiple witnesses",
+      "military proximity"
+    ],
+    "confidence": "Medium",
+    "crosslinks": [
+      "az-mil-flights-1997",
+      "triangulated-craft-pattern"
+    ]
+  }
+]

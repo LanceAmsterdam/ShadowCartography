@@ -1,0 +1,46 @@
+{
+  "id": "string",
+  "title": "string",
+  "type": {
+    "enum": [
+      "UFO",
+      "Government",
+      "Science",
+      "Folklore",
+      "Hoax",
+      "Media",
+      "Other"
+    ]
+  },
+  "summary": "string",
+  "dates": {
+    "start": "YYYY-MM-DD (optional)",
+    "end": "YYYY-MM-DD (optional)"
+  },
+  "locations": [
+    "string"
+  ],
+  "entities": [
+    "string"
+  ],
+  "sources": [
+    {
+      "label": "string",
+      "url": "string (optional)"
+    }
+  ],
+  "tags": [
+    "string"
+  ],
+  "confidence": {
+    "enum": [
+      "High",
+      "Medium",
+      "Low"
+    ]
+  },
+  "crosslinks": [
+    "id"
+  ],
+  "notes": "string (optional)"
+}
