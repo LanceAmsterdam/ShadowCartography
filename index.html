@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shadow Cartography</title>
+  <style>
+    :root{
+      --bg:#0f0f10; --card:#16171a; --muted:#9aa0a6; --text:#e8eaed; --chip:#222326; --border:#26272b; --accent:#8ab4f8;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    header{position:sticky;top:0;background:rgba(22,23,26,.8);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .row{display:flex;gap:8px;align-items:center}
+    .col{display:grid;gap:12px}
+    .logo{width:36px;height:36px;border-radius:12px;background:#111;display:grid;place-items:center;font-weight:700}
+    .controls{display:grid;gap:12px;grid-template-columns:1fr 1fr 180px}
+    input,select,button{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:#0e0f12;color:var(--text)}
+    .range{display:flex;gap:12px;align-items:center}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+    .card h3{margin:0 0 6px 0;font-size:16px}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+    .badge{font-size:10px;text-transform:uppercase;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--chip);color:#cfd3da}
+    .meta{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:12px}
+    .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#0e0f12;color:var(--text);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .details{margin-top:10px;border-top:1px dashed var(--border);padding-top:10px}
+    .count{color:var(--muted)}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .small{font-size:12px;color:var(--muted)}
+    .footer{border-top:1px solid var(--border);background:#131416}
+  </style>
+  <!-- React (CDN) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="wrap row">
+      <div class="logo">SC</div>
+      <div>
+        <div style="font-weight:600">Shadow Cartography</div>
+        <div class="small">Search. Cross-link. Notice the patterns.</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="root"></div>
+
+  <!-- Seed data (you can expand this later or swap it for a fetch) -->
+  <script id="data-seed" type="application/json">[
+    {
+      "id":"phoenix-lights-1997",
+      "title":"Phoenix Lights (1997)",
+      "type":"UFO",
+      "summary":"Mass sighting of lights over Arizona; thousands of witnesses. Military exercises nearby created competing explanations.",
+      "dates":{"start":"1997-03-13"},
+      "locations":["Phoenix, AZ","Tucson, AZ"],
+      "entities":["Fife Symington","Luke AFB"],
+      "sources":[{"label":"Wikipedia"},{"label":"Local news archives"}],
+      "tags":["nocturnal lights","multiple witnesses","military proximity"],
+      "confidence":"Medium",
+      "crosslinks":["az-mil-flights-1997","triangulated-craft-pattern"]
+    },
+    {
+      "id":"roswell-1947",
+      "title":"Roswell (1947)",
+      "type":"Government",
+      "summary":"Famous crash and subsequent narratives of cover-up; shifted from 'flying disc' press release to weather balloon explanation, later Project Mogul claims.",
+      "dates":{"start":"1947-07-08"},
+      "locations":["Roswell, NM"],
+      "entities":["USAAF","Project Mogul"],
+      "sources":[{"label":"Declassified summaries"},{"label":"Newspaper clippings"}],
+      "tags":["crash","cover-up","ufology"],
+      "confidence":"Medium",
+      "crosslinks":["triangulated-craft-pattern"]
+    },
+    {
+      "id":"mkultra-revelations",
+      "title":"Project MKUltra Revelations",
+      "type":"Government",
+      "summary":"CIA mind-control experiments, some details known via Church Committee and declassified documents; many records destroyed.",
+      "dates":{"start":"1953-01-01","end":"1973-01-01"},
+      "locations":["USA","Canada"],
+      "entities":["CIA","Church Committee"],
+      "sources":[{"label":"Church Committee summaries"},{"label":"FOIA releases"}],
+      "tags":["mind control","ethics","cold war"],
+      "confidence":"High",
+      "crosslinks":[]
+    }
+  ]</script>
+
+  <script>
+    const { useMemo, useState } = React;
+
+    function yearFromDates(d){ if(!d) return; const g=s=>s?Number(String(s).slice(0,4)):undefined; return g(d.start) ?? g(d.end); }
+    const ALL_TYPES = ["UFO","Government","Science","Folklore","Hoax","Media","Other"];
+
+    function App(){
+      const DATA = JSON.parse(document.getElementById('data-seed').textContent);
+      const years = useMemo(()=>{
+        const ys = DATA.map(x=>yearFromDates(x.dates)).filter(Boolean);
+        return {min: Math.min(...ys,1900), max: Math.max(...ys, new Date().getFullYear())};
+      },[]);
+      const [q,setQ]=useState(''), [lq,setLQ]=useState(''), [t,setT]=useState('All');
+      const [minY,setMinY]=useState(years.min), [maxY,setMaxY]=useState(years.max);
+      const [open,setOpen]=useState({});
+
+      const filtered = useMemo(()=>{
+        const qq=q.toLowerCase(), ll=lq.toLowerCase();
+        return DATA.filter(d=>{
+          const y = yearFromDates(d.dates) ?? years.min;
+          if (y<minY || y>maxY) return false;
+          if (t!=='All' && d.type!==t) return false;
+          const hay=[d.title,d.summary,(d.tags||[]).join(' '),(d.entities||[]).join(' ')].join(' ').toLowerCase();
+          const loc=(d.locations||[]).join(' ').toLowerCase();
+          const okQ = qq ? hay.includes(qq) : true;
+          const okL = ll ? loc.includes(ll) : true;
+          return okQ && okL;
+        }).sort((a,b)=>(yearFromDates(b.dates)||0)-(yearFromDates(a.dates)||0));
+      },[q,lq,t,minY,maxY,years.min]);
+
+      return React.createElement(
+        React.Fragment,
+        null,
+        // Controls
+        React.createElement('section',{className:'wrap col', style:{margin:'16px auto'}},
+          React.createElement('div',{className:'controls'},
+            React.createElement('input',{placeholder:'Keyword: MKUltra, triangle, witness...', value:q, onChange:e=>setQ(e.target.value)}),
+            React.createElement('input',{placeholder:'Location: Media, PA; Phoenix; UK...', value:lq, onChange:e=>setLQ(e.target.value)}),
+            React.createElement('select',{value:t,onChange:e=>setT(e.target.value)},
+              React.createElement('option',null,'All'),
+              ...ALL_TYPES.map(x=>React.createElement('option',{key:x},x))
+            )
+          ),
+          React.createElement('div',{className:'range'},
+            React.createElement('span',{className:'small'},'Year range'),
+            React.createElement('input',{type:'range', min:years.min, max:years.max, value:minY, onChange:e=>setMinY(+e.target.value)}),
+            React.createElement('input',{type:'range', min:years.min, max:years.max, value:maxY, onChange:e=>setMaxY(+e.target.value)}),
+            React.createElement('span',{className:'small', style:{marginLeft:'auto'}},`${minY} – ${maxY}`)
+          )
+        ),
+        // Results
+        React.createElement('main',{className:'wrap col', style:{margin:'0 auto 80px'}},
+          React.createElement('div',{className:'count'}, `${filtered.length} result${filtered.length===1?'':'s'}`),
+          ...filtered.map(d=>React.createElement('div',{key:d.id, className:'card'},
+            React.createElement('h3',null,d.title),
+            React.createElement('div',{className:'badges'},
+              React.createElement('span',{className:'badge'},d.type),
+              React.createElement('span',{className:'badge'},d.confidence),
+              ...((d.tags||[]).slice(0,4).map(t=>React.createElement('span',{key:t,className:'badge'},t)))
+            ),
+            React.createElement('p',{style:{margin:'6px 0 8px 0'}},d.summary),
+            React.createElement('div',{className:'meta'},
+              d.locations?.length ? React.createElement('span',null,'📍 ', d.locations.join(' · ')) : null,
+              d.entities?.length ? React.createElement('span',null,'🧩 ', d.entities.slice(0,5).join(' · ')) : null,
+              React.createElement('span',null,'📅 ', yearFromDates(d.dates) || '—')
+            ),
+            React.createElement('div',{style:{marginTop:8}},
+              React.createElement('button',{className:'btn', onClick:()=>setOpen(o=>({...o,[d.id]:!o[d.id]}))}, open[d.id]?'Hide details':'Show details')
+            ),
+            open[d.id] ? React.createElement('div',{className:'details'},
+              React.createElement('div',{className:'small', style:{fontWeight:600,marginBottom:4}},'Sources'),
+              React.createElement('ul',{style:{margin:0,paddingLeft:16}},
+                ...((d.sources||[]).map((s,i)=>React.createElement('li',{key:i}, s.url ? React.createElement('a',{href:s.url, target:'_blank', rel:'noreferrer'},s.label) : s.label )))
+              )
+            ) : null
+          )))
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+
+  <footer class="footer">
+    <div class="wrap row" style="justify-content:space-between;padding:12px 16px">
+      <div class="small">Single-file demo — we can switch to Vite later.</div>
+      <div class="small">© Shadow Cartography</div>
+    </div>
+  </footer>
+</body>
+</html>
