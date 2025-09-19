@@ -1,1 +1,1 @@
-Shadow Cartography minimal site.
+Shadow Cartography is a new frontier
